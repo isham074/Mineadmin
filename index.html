@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel</title>
+  <style>
+    body {
+      background: #111;
+      color: #eee;
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .user-list {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .user-card {
+      background: #222;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+    }
+    .user-card input {
+      padding: 5px;
+      width: 60px;
+      border-radius: 4px;
+      margin-right: 5px;
+    }
+    .user-card button {
+      padding: 5px 10px;
+      margin-left: 5px;
+      background: #1e88e5;
+      border: none;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .user-card .history {
+      background: #333;
+      margin-top: 8px;
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+  <body onload="checkAuth()">
+  <script>
+    function checkAuth() {
+      const pass = prompt("Enter admin password:");
+      if (pass !== "Rahat") {
+        alert("Access Denied.");
+        document.body.innerHTML = "<h1 style='color:red; text-align:center;'>Access Denied</h1>";
+      }
+    }
+  </script>
+
+  <h1>Admin Panel</h1>
+  
+    <div style="max-width:600px;margin:0 auto;margin-bottom:20px;padding:10px;background:#222;border-radius:8px;">
+      <h3>Add New User</h3>
+      <input type="text" id="newUsername" placeholder="Username" style="padding:5px;border-radius:4px;">
+      <input type="number" id="newBalance" placeholder="Start Balance" style="padding:5px;border-radius:4px;">
+      <button onclick="addNewUser()">Add User</button>
+    </div>
+    <div class="user-list" id="userList"></div>
+    
+
+  <script>
+    
+    function addNewUser() {
+      const username = document.getElementById("newUsername").value.trim();
+      const balance = parseFloat(document.getElementById("newBalance").value);
+
+      if (!username || isNaN(balance)) {
+        return alert("Please enter a valid username and balance.");
+      }
+
+      const users = JSON.parse(localStorage.getItem("users")) || {};
+      if (users[username]) {
+        return alert("User already exists.");
+      }
+
+      users[username] = balance;
+      localStorage.setItem("users", JSON.stringify(users));
+      loadUsers();
+      alert("User added successfully.");
+    }
+
+    function loadUsers() {
+
+      const userList = document.getElementById("userList");
+      userList.innerHTML = "";
+
+      const users = JSON.parse(localStorage.getItem("users")) || {};
+
+      Object.entries(users).forEach(([username, balance]) => {
+        const card = document.createElement("div");
+        card.className = "user-card";
+
+        card.innerHTML = \`
+          <strong>\${username}</strong> - Balance: ৳<span class="balance">\${parseFloat(balance).toFixed(2)}</span><br>
+          <input type="number" placeholder="+/- Amount" id="amount-\${username}">
+          <button onclick="updateBalance('\${username}', true)">Add</button>
+          <button onclick="updateBalance('\${username}', false)">Cut</button>
+          <button onclick="toggleHistory(this, '\${username}')">History</button>
+          <div class="history" id="history-\${username}" style="display: none;"></div>
+        \`;
+
+        userList.appendChild(card);
+      });
+    }
+
+    function updateBalance(username, isAdd) {
+      const users = JSON.parse(localStorage.getItem("users")) || {};
+      const input = document.getElementById("amount-" + username);
+      const amount = parseFloat(input.value);
+      if (isNaN(amount) || amount <= 0) return alert("Enter a valid amount!");
+
+      if (isAdd) {
+        users[username] = (parseFloat(users[username]) || 0) + amount;
+      } else {
+        users[username] = Math.max(0, (parseFloat(users[username]) || 0) - amount);
+      }
+
+      localStorage.setItem("users", JSON.stringify(users));
+      loadUsers();
+    }
+
+    function toggleHistory(button, username) {
+      const historyDiv = document.getElementById("history-" + username);
+      const key = "history_" + username;
+      const history = JSON.parse(localStorage.getItem(key)) || [];
+
+      if (historyDiv.style.display === "none") {
+        historyDiv.style.display = "block";
+        historyDiv.innerHTML = history.length
+          ? history.map(h => \`<div>Bet: ৳\${h.bet}, Mines: \${h.mines}, Safe: \${h.safe}, Result: \${h.result}, Win: ৳\${h.win}</div>\`).join("")
+          : "No history found.";
+        button.innerText = "Hide History";
+      } else {
+        historyDiv.style.display = "none";
+        button.innerText = "History";
+      }
+    }
+
+    loadUsers();
+  </script>
+</body>
+</html>
